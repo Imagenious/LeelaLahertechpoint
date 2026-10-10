@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leela Laher Tech Point · Digital Catalogue</title>
+  <meta name="description" content="Browse CCTV cameras, Apple products, televisions, ACs and computer accessories at Leela Laher Tech Point. Enquire instantly on WhatsApp or email.">
+  <meta name="theme-color" content="#0c0b10">
+  <link rel="icon" href="/brand/favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/catalog.css">
+  <link rel="stylesheet" href="/genie.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-in">
+      <a href="#/" class="brand" aria-label="Home">
+        <img src="/brand/ll-mark.png" alt="Leela Laher logo" height="44">
+        <span class="brand-text"><strong id="storeName">Leela Laher Tech Point</strong><small id="storeTag">Digital Catalogue</small></span>
+      </a>
+      <form class="search" id="searchForm" role="search">
+        <span class="search-ic" data-icon="search"></span>
+        <input id="searchInput" type="search" placeholder="Search iPhone, CCTV, 1.5 ton AC, monitor…" aria-label="Search products" autocomplete="off">
+      </form>
+      <div class="top-actions">
+        <a class="btn-ghost hide-sm" id="topCall" href="#"><span data-icon="call"></span><span>Call</span></a>
+        <button class="btn-wa" id="topWa" type="button"><span data-icon="whatsapp"></span><span class="hide-xs">WhatsApp</span></button>
+      </div>
+    </div>
+    <nav class="catnav" aria-label="Categories">
+      <div class="wrap catnav-in" id="catNav"></div>
+    </nav>
+  </header>
+
+  <main id="app" class="wrap" tabindex="-1"></main>
+
+  <footer class="footer">
+    <div class="wrap footer-in">
+      <div>
+        <div class="foot-brand"><img src="/brand/ll-mark.png" alt="" height="40"><strong id="footName">Leela Laher Tech Point</strong></div>
+        <p id="footTag" class="muted"></p>
+        <a class="foot-about" href="#/about">About us &amp; our team &rarr;</a>
+      </div>
+      <ul class="foot-list">
+        <li><span data-icon="pin"></span><span id="footAddr"></span></li>
+        <li><span data-icon="clock"></span><span id="footHours"></span></li>
+        <li><span data-icon="call"></span><a id="footPhone" href="#"></a></li>
+        <li><span data-icon="mail"></span><a id="footEmail" href="#"></a></li>
+        <li id="footWebRow" hidden><span data-icon="globe"></span><a id="footWeb" href="#" target="_blank" rel="noopener"></a></li>
+      </ul>
+    </div>
+    <div class="wrap foot-bottom">
+      <span>© <span id="year"></span> Leela Laher Tech Point. All brand names belong to their respective owners.</span>
+      <span class="ver" id="verTag" title="Catalogue software version">v1.0.0</span>
+    </div>
+  </footer>
+
+  <button class="fab-wa" id="fabWa" type="button" aria-label="Chat with us on WhatsApp"><span data-icon="whatsapp"></span></button>
+
+  <!-- Product detail -->
+  <div class="modal" id="productModal" role="dialog" aria-modal="true" aria-labelledby="pmTitle" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-card product-card-lg" id="pmBody"></div>
+  </div>
+
+  <!-- Welcome / customer details -->
+  <div class="modal" id="kycModal" role="dialog" aria-modal="true" aria-labelledby="kycTitle" hidden>
+    <div class="modal-backdrop"></div>
+    <div class="modal-card kyc-card">
+      <div class="kyc-head">
+        <img src="/brand/ll-logo.png" alt="Leela Laher logo" height="72" class="kyc-logo">
+        <div>
+          <h2 id="kycTitle">Welcome to <span class="kyc-store">Leela Laher Tech Point</span></h2>
+          <p class="muted">Tell us a little about you to explore our latest products, prices and offers.</p>
+        </div>
+      </div>
+      <form id="kycForm" novalidate>
+        <label class="field"><span>Full name</span>
+          <div class="input-ic"><span data-icon="user"></span><input name="name" autocomplete="name" required maxlength="60" placeholder="e.g. Rahul Sharma"></div>
+        </label>
+        <label class="field"><span>Mobile number</span>
+          <div class="input-ic"><span class="prefix">+91</span><input name="mobile" inputmode="numeric" autocomplete="tel-national" required maxlength="14" placeholder="10-digit mobile"></div>
+        </label>
+        <label class="field"><span>City</span>
+          <div class="input-ic"><span data-icon="pin"></span><input name="city" list="cityList" autocomplete="address-level2" required maxlength="60" placeholder="Your city"></div>
+        </label>
+        <datalist id="cityList"></datalist>
+        <label class="check"><input type="checkbox" name="consent" checked> <span>I agree that Leela Laher Tech Point may contact me on this number about products and offers.</span></label>
+        <p class="form-error" id="kycError" role="alert"></p>
+        <button class="btn-primary btn-block" type="submit"><span>Explore the catalogue</span><span data-icon="chevronRight"></span></button>
+        <p class="tiny muted center"><span data-icon="lock"></span> Your details are kept private and never shared.</p>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/icons.js"></script>
+  <script src="/devices.js"></script>
+  <script src="/genie.js"></script>
+  <script src="/catalog.js"></script>
+</body>
+</html>

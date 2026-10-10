@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Catalogue Admin · Leela Laher Tech Point</title>
+  <link rel="icon" href="/brand/favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+  <!-- Login -->
+  <section id="login" class="login" hidden>
+    <div class="login-card">
+      <div class="login-brand"><img src="/brand/ll-mark.png" alt="" height="52" class="brand-mark">
+        <div><strong>Leela Laher Tech Point</strong><span>Catalogue Admin</span></div></div>
+      <h1>Sign in</h1>
+      <p class="muted">Manage products, enquiries and your customer database.</p>
+      <form id="loginForm">
+        <label class="field"><span>Username</span><input name="username" autocomplete="username" required></label>
+        <label class="field"><span>Password</span><input name="password" type="password" autocomplete="current-password" required></label>
+        <p class="form-error" id="loginError" role="alert"></p>
+        <button class="btn primary block" type="submit">Sign in</button>
+      </form>
+      <p class="login-ver" id="loginVer"></p>
+    </div>
+  </section>
+
+  <!-- App -->
+  <div id="shell" class="shell" hidden>
+    <aside class="side" id="side">
+      <div class="side-brand"><img src="/brand/ll-mark.png" alt="" height="38" class="brand-mark">
+        <div><strong>Leela Laher</strong><span>Tech Point Admin</span></div></div>
+      <nav class="side-nav" id="sideNav">
+        <a href="#dashboard" data-view="dashboard"><span data-icon="chart"></span>Dashboard</a>
+        <a href="#enquiries" data-view="enquiries"><span data-icon="message"></span>Enquiries<em id="openBadge" hidden></em></a>
+        <a href="#customers" data-view="customers"><span data-icon="users"></span>Customers</a>
+        <a href="#products" data-view="products"><span data-icon="box"></span>Products</a>
+        <a href="#categories" data-view="categories"><span data-icon="layers"></span>Categories</a>
+        <a href="#settings" data-view="settings"><span data-icon="settings"></span>Settings</a>
+      </nav>
+      <div class="side-foot">
+        <a class="side-link" href="/" target="_blank" rel="noopener"><span data-icon="eye"></span>View catalogue</a>
+        <button class="side-link" id="logoutBtn" type="button"><span data-icon="logout"></span>Log out</button>
+        <div class="version" id="versionBox"></div>
+      </div>
+    </aside>
+    <div class="main">
+      <header class="main-top">
+        <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="Menu"><span data-icon="menu"></span></button>
+        <h1 id="viewTitle">Dashboard</h1>
+        <div class="top-right"><span class="who" id="whoAmI"></span></div>
+      </header>
+      <div id="alerts"></div>
+      <div id="view" class="view"></div>
+    </div>
+  </div>
+
+  <!-- Drawer (product / category editors) -->
+  <div class="drawer" id="drawer" hidden>
+    <div class="drawer-bg" data-close></div>
+    <div class="drawer-card" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+      <div class="drawer-head"><h2 id="drawerTitle"></h2><button class="icon-btn" data-close type="button" aria-label="Close"><span data-icon="x"></span></button></div>
+      <div class="drawer-body" id="drawerBody"></div>
+      <div class="drawer-foot" id="drawerFoot"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/icons.js"></script>
+  <script src="/admin.js"></script>
+</body>
+</html>

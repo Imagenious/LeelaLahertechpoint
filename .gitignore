@@ -1,0 +1,19 @@
+# Live data: customer database (names, mobiles) and uploaded photos - never commit
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Python
+__pycache__/
+*.pyc
+
+# Local tooling
+.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Original artwork kept locally (the app uses the cut-outs in public/brand/)
+WhatsApp Image *.jpeg
