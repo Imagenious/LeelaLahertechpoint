@@ -56,7 +56,7 @@
     A.me = await api('/api/admin/me');
     $('#login').hidden = true;
     $('#shell').hidden = false;
-    $('#whoAmI').innerHTML = icon('user', 16) + ' ' + esc(A.me.username);
+    $('#whoAmI').innerHTML = icon('user', 16) + ' ' + esc(A.me.username) + (A.me.role === 'master' ? ' <span class="pill master">Master</span>' : ' <span class="pill">Staff</span>');
     $('#versionBox').innerHTML = `<strong>Version ${esc(A.me.version)}</strong><br>Released ${esc(A.me.released)}`;
     $('#alerts').innerHTML = A.me.warnings.map(w => `<div class="alert">${icon('alert', 18)}<span>${esc(w)} <a href="#settings">Open Settings</a></span></div>`).join('');
     route();
@@ -576,7 +576,69 @@
         f.reset(); $('#pwErr').textContent = ''; toast('Login updated'); refreshMe();
       } catch (ex) { $('#pwErr').textContent = ex.message; }
     };
+    if (A.me.role === 'master') teamEditor();
     aboutEditor();
+  }
+
+  // ---------- team logins (master only)
+  async function teamEditor() {
+    const box = document.createElement('div');
+    box.className = 'panel';
+    box.style.marginTop = '16px';
+    view.appendChild(box);
+    const roleBadge = r => `<span class="pill ${r === 'master' ? 'master' : ''}">${r === 'master' ? icon('star', 12) + ' Master' : 'Staff'}</span>`;
+    const draw = async () => {
+      const d = await api('/api/admin/users');
+      box.innerHTML = `
+        <div class="panel-head"><div><h2>${icon('shield', 18)} Team logins</h2>
+          <p class="sub">You are the <strong>master admin</strong>. Create a separate login for each staff member. Staff can manage products, enquiries and customers, but only a master can manage logins.</p></div></div>
+        <div class="table-wrap" style="box-shadow:none;margin-bottom:14px"><table class="t"><thead><tr><th>Username</th><th>Role</th><th>Last login</th><th>Password changed</th><th></th></tr></thead><tbody>
+        ${d.users.map(u => `<tr data-id="${u.id}" data-name="${esc(u.username)}" data-role="${u.role || 'staff'}">
+          <td class="strong">${esc(u.username)}${u.id === d.me ? ' <small class="muted">(you)</small>' : ''}</td>
+          <td>${roleBadge(u.role)}</td>
+          <td class="nowrap">${u.last_login ? dt(u.last_login) : '<span class="muted">Never</span>'}</td>
+          <td class="nowrap">${u.pw_changed_at ? dt(u.pw_changed_at) : '<span class="muted">Default</span>'}</td>
+          <td><div class="actions">${u.id === d.me ? '' : `<button class="btn sm" type="button" data-uedit>${icon('edit', 14)} Edit</button><button class="icon-btn danger" type="button" data-udel title="Remove login">${icon('trash', 15)}</button>`}</div></td></tr>`).join('')}
+        </tbody></table></div>
+        <form id="uAdd" class="row3" autocomplete="off" style="align-items:end">
+          <label class="field" style="margin:0"><span>New username</span><input name="username" placeholder="e.g. shaukat" autocomplete="off"></label>
+          <label class="field" style="margin:0"><span>Password</span><input name="password" type="password" placeholder="8+ letters & numbers" autocomplete="new-password"></label>
+          <label class="field" style="margin:0"><span>Role</span><select name="role"><option value="staff">Staff</option><option value="master">Master (can manage logins)</option></select></label>
+        </form>
+        <div class="toolbar" style="margin:12px 0 0"><p class="form-error" id="uErr" style="margin:0"></p><span class="grow"></span>
+          <button class="btn primary" type="button" id="uAddBtn">${icon('plus', 16)} Add login</button></div>`;
+      $('#uAddBtn', box).onclick = async () => {
+        const f = $('#uAdd', box);
+        try {
+          await api('/api/admin/users', 'POST', { username: f.username.value.trim(), password: f.password.value, role: f.role.value });
+          toast('Login created'); draw();
+        } catch (ex) { $('#uErr', box).textContent = ex.message; }
+      };
+      $$('[data-udel]', box).forEach(b => b.onclick = async () => {
+        const tr = b.closest('tr');
+        if (!confirm(`Remove the login "${tr.dataset.name}"? They will be signed out immediately.`)) return;
+        try { await api('/api/admin/users/' + tr.dataset.id, 'DELETE'); toast('Login removed'); draw(); } catch (ex) { toast(ex.message, true); }
+      });
+      $$('[data-uedit]', box).forEach(b => b.onclick = () => {
+        const tr = b.closest('tr');
+        openDrawer('Edit login', `
+          <form id="ue" autocomplete="off">
+            <label class="field"><span>Username</span><input name="username" value="${esc(tr.dataset.name)}"></label>
+            <label class="field"><span>Role</span><select name="role"><option value="staff" ${tr.dataset.role !== 'master' ? 'selected' : ''}>Staff</option><option value="master" ${tr.dataset.role === 'master' ? 'selected' : ''}>Master (can manage logins)</option></select></label>
+            <label class="field"><span>New password</span><input name="password" type="password" autocomplete="new-password" placeholder="Leave empty to keep the current password"><small>Setting a new password signs this person out everywhere.</small></label>
+            <p class="form-error" id="ueErr"></p>
+          </form>`,
+          `<button class="btn" type="button" data-close>Cancel</button><button class="btn primary" type="button" id="ueSave">${icon('check', 16)} Save</button>`);
+        $('#ueSave').onclick = async () => {
+          const f = $('#ue');
+          try {
+            await api('/api/admin/users/' + tr.dataset.id, 'PUT', { username: f.username.value.trim(), role: f.role.value, password: f.password.value });
+            closeDrawer(); toast('Login updated'); draw();
+          } catch (ex) { $('#ueErr').textContent = ex.message; }
+        };
+      });
+    };
+    try { await draw(); } catch (ex) { box.innerHTML = `<p class="form-error">${esc(ex.message)}</p>`; }
   }
 
   // ---------- "About us" page editor (team, photos, intro)
@@ -640,7 +702,7 @@
         if (!file) return;
         collect();
         try {
-          const data = await resizeImage(file, 900);
+          const data = await resizeImage(file, 1400);
           team[+inp.closest('.member').dataset.i].photo = (await api('/api/admin/upload', 'POST', { data })).url;
           draw();
           toast('Photo added. Remember to Save.');
@@ -657,7 +719,7 @@
   }
   async function refreshMe() {
     A.me = await api('/api/admin/me');
-    $('#whoAmI').innerHTML = icon('user', 16) + ' ' + esc(A.me.username);
+    $('#whoAmI').innerHTML = icon('user', 16) + ' ' + esc(A.me.username) + (A.me.role === 'master' ? ' <span class="pill master">Master</span>' : ' <span class="pill">Staff</span>');
     $('#alerts').innerHTML = A.me.warnings.map(w => `<div class="alert">${icon('alert', 18)}<span>${esc(w)} <a href="#settings">Open Settings</a></span></div>`).join('');
   }
 

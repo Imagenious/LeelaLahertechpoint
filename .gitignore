@@ -17,3 +17,9 @@ Thumbs.db
 
 # Original artwork kept locally (the app uses the cut-outs in public/brand/)
 WhatsApp Image *.jpeg
+
+# Data export packages (contain customer data)
+*.zip
+
+# Private owner guide (logins & instructions) - never commit
+OWNER-GUIDE.*

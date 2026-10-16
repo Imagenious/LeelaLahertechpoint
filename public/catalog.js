@@ -259,7 +259,9 @@
       <div class="team">${(a.team || []).map(m => `
         <article class="person">
           <div class="person-top">
-            <div class="person-photo">${m.photo ? `<img src="${esc(m.photo)}" alt="${esc(m.name)}">` : `<span class="person-initials" aria-hidden="true">${esc(initials(m.name))}</span>`}</div>
+            ${m.photo
+              ? `<button type="button" class="person-photo" data-photo="${esc(m.photo)}" data-name="${esc(m.name)}" data-role="${esc(m.role)}" aria-label="View larger photo of ${esc(m.name)}"><img src="${esc(m.photo)}" alt="${esc(m.name)}" loading="eager" decoding="async"><span class="zoom-hint">${icon('search', 16)}</span></button>`
+              : `<div class="person-photo"><span class="person-initials" aria-hidden="true">${esc(initials(m.name))}</span></div>`}
             <div class="person-id">
               <h3>${esc(m.name)}</h3>
               <span class="person-role">${esc(m.role)}</span>
@@ -292,6 +294,23 @@
         </div>
         <img class="visit-mark" src="/brand/ll-mark.png" alt="">
       </section>`;
+    app.querySelectorAll('button.person-photo').forEach(b => b.onclick = () => showPhoto(b.dataset.photo, b.dataset.name, b.dataset.role, b));
+  }
+
+  function showPhoto(src, name, role, opener) {
+    const v = document.createElement('div');
+    v.className = 'photo-view';
+    v.setAttribute('role', 'dialog');
+    v.setAttribute('aria-modal', 'true');
+    v.setAttribute('aria-label', name);
+    v.tabIndex = -1;
+    v.innerHTML = `<figure><img src="${esc(src)}" alt="${esc(name)}"><figcaption>${esc(name)}<span>${esc(role || '')}</span></figcaption></figure>`;
+    const close = () => { v.remove(); document.removeEventListener('keydown', onKey); if (opener) opener.focus(); };
+    const onKey = e => { if (e.key === 'Escape') close(); };
+    v.onclick = close;
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(v);
+    v.focus();
   }
 
   function viewSearch(q) {

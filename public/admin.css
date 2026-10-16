@@ -234,7 +234,10 @@ table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 
 /* About us editor */
 .member-grid { display: grid; grid-template-columns: 130px 1fr; gap: 16px; align-items: start; }
-.avatar-tile, .avatar-add { width: 120px; height: 120px; border-radius: 50%; }
+.avatar-tile, .avatar-add { width: 120px; height: 120px; border-radius: 14px; }
 .avatar-tile img { object-fit: cover; }
 .avatar-tile button { top: 6px; right: 6px; }
 @media (max-width: 820px) { .member-grid { grid-template-columns: 1fr; } }
+
+/* roles */
+.pill.master { background: linear-gradient(135deg, #f5dc6b, #e3c22b); color: #1a1500; }

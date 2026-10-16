@@ -1,6 +1,6 @@
 # Leela Laher Tech Point - Digital Catalogue
 
-**Version 1.5.1** (released 2026-10-10)
+**Version 1.6.0** (released 2026-10-16)
 
 An online catalogue for the showroom. Customers browse products by category, see pictures, specs and prices, and send an enquiry on WhatsApp or by email in one tap. The owner gets a password-protected admin panel with a visitor dashboard and a customer database.
 
@@ -25,6 +25,7 @@ python server.py
 Customers on the same Wi-Fi as the computer can open `http://<this-computer's-IP>:8080/`.
 
 ## Version history
+- **1.6.0** - About us photos in a larger square gold frame with corner accents; tap a photo to view it full size. Master / staff admin logins: the owner's login is the **Master** and can add, edit and remove staff logins in Admin > Settings > Team logins (staff can't manage logins). `reset_admin.py` resets the master login if the password is forgotten.
 - **1.5.1** - Pre-deployment check (119 automated server checks plus customer and admin pages tested at phone and desktop sizes). Fixed: the privacy note on the welcome form could cover the City box and block typing. Admin login cookie is marked Secure when served over HTTPS. Added `wsgi.py` for PythonAnywhere. New installs get a random first admin password (no fixed default).
 - **1.5.0** - "About us" tab with the company story and leadership profiles (Mr. Avinash Jain, CEO & Founder; Mr. Shaukat, Head of Operations), "Why customers choose us" and a visit-us section with directions. Text and team photos are editable in Admin > Settings > About us page. Store contact details, website and Gadag-area city suggestions added.
 - **1.4.0** - Personal "Tech Genie" mascot: welcomes each new customer by name, time of day and city after they enter their details, then offers a 4-tip guided tour that spotlights categories, search, products and WhatsApp enquiry. Returning customers get a short "welcome back" once per visit, and a genie help button replays the tips anytime. Category tiles now show the product photo with a bold border in the category colour.
@@ -94,10 +95,14 @@ PythonAnywhere runs the catalogue through `wsgi.py` (same code as `python server
 
 > The `data/` folder holds customer names and mobile numbers. It is excluded from Git (`.gitignore`) and must never be uploaded to GitHub.
 
+## Forgot the admin password?
+On the server (PythonAnywhere: a Bash console), run `cd ~/LL-Digital && python3 reset_admin.py` and choose a new master username and password.
+
 ## Files
 ```
 server.py        web server, API and database (Python)
 wsgi.py          entry point for hosts like PythonAnywhere
+reset_admin.py   resets the master admin login from the command line
 seed_data.py     starter categories and products (loaded on first run only)
 start.bat        double-click launcher for Windows
 public/          catalogue and admin pages (HTML/CSS/JS, icons, logo)

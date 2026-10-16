@@ -27,8 +27,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 APP_NAME = "Leela Laher Tech Point - Digital Catalogue"
-VERSION = "1.5.1"
-RELEASED = "2026-10-10"
+VERSION = "1.6.0"
+RELEASED = "2026-10-16"
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 PUBLIC = os.path.join(BASE, "public")
@@ -209,6 +209,14 @@ def migrate(conn):
     prod_cols = {r[1] for r in conn.execute("PRAGMA table_info(products)")}
     if "representative" not in prod_cols:
         conn.execute("ALTER TABLE products ADD COLUMN representative INTEGER DEFAULT 0")
+    admin_cols = {r[1] for r in conn.execute("PRAGMA table_info(admins)")}
+    if "role" not in admin_cols:
+        conn.execute("ALTER TABLE admins ADD COLUMN role TEXT DEFAULT 'staff'")
+    if "last_login" not in admin_cols:
+        conn.execute("ALTER TABLE admins ADD COLUMN last_login TEXT")
+    # there must always be one master (the owner): the oldest login becomes master if none exists
+    if conn.execute("SELECT 1 FROM admins").fetchone() and not conn.execute("SELECT 1 FROM admins WHERE role='master'").fetchone():
+        conn.execute("UPDATE admins SET role='master' WHERE id=(SELECT MIN(id) FROM admins)")
 
 
 def seed(conn, categories):
@@ -477,6 +485,7 @@ def api_login(req, conn, body):
     conn.execute("DELETE FROM sessions WHERE expires < ?", (time.time(),))
     conn.execute("INSERT INTO sessions(token,admin_id,expires) VALUES(?,?,?)",
                  (token, a["id"], time.time() + SESSION_HOURS * 3600))
+    conn.execute("UPDATE admins SET last_login=? WHERE id=?", (now(), a["id"]))
     conn.commit()
     req.set_cookie = "llsess=%s; HttpOnly; SameSite=Strict; Path=/; Max-Age=%d%s" % (token, SESSION_HOURS * 3600, req.secure_flag())
     return {"ok": True, "username": a["username"]}
@@ -499,7 +508,7 @@ def api_me(req, conn, body):
         warnings.append("You are using the default password. Please change it in Settings.")
     if s.get("whatsapp") == DEFAULT_SETTINGS["whatsapp"] or s.get("email") == DEFAULT_SETTINGS["email"]:
         warnings.append("Set your real WhatsApp number and email in Settings so enquiries reach you.")
-    return {"username": a["username"], "version": VERSION, "released": RELEASED,
+    return {"username": a["username"], "role": a["role"] or "staff", "version": VERSION, "released": RELEASED,
             "app": APP_NAME, "warnings": warnings}
 
 
@@ -508,16 +517,95 @@ def api_password(req, conn, body):
     a = req.admin
     if not hmac.compare_digest(hash_pw(str(body.get("current") or ""), a["salt"])[0], a["pw_hash"]):
         raise ApiError("Current password is incorrect.")
-    new = str(body.get("new") or "")
-    if len(new) < 8 or not re.search(r"\d", new) or not re.search(r"[A-Za-z]", new):
-        raise ApiError("New password must be at least 8 characters with letters and numbers.")
-    new_user = clean(body.get("username") or a["username"], 40)
-    if not re.fullmatch(r"[A-Za-z0-9_.@-]{3,40}", new_user):
-        raise ApiError("Username may use letters, numbers and . _ @ - (3-40 characters).")
+    new = check_password(body.get("new"))
+    new_user = check_username(conn, body.get("username") or a["username"], a["id"])
     h, s = hash_pw(new)
     conn.execute("UPDATE admins SET username=?, pw_hash=?, salt=?, pw_changed_at=? WHERE id=?",
                  (new_user, h, s, now(), a["id"]))
     conn.execute("DELETE FROM sessions WHERE admin_id=? AND token<>?", (a["id"], req.session_token))
+    conn.commit()
+    return {"ok": True}
+
+
+def check_password(value):
+    pw = str(value or "")
+    if len(pw) < 8 or not re.search(r"\d", pw) or not re.search(r"[A-Za-z]", pw):
+        raise ApiError("Password must be at least 8 characters with letters and numbers.")
+    return pw
+
+
+def check_username(conn, value, own_id=None):
+    name = clean(value, 40)
+    if not re.fullmatch(r"[A-Za-z0-9_.@-]{3,40}", name):
+        raise ApiError("Username may use letters, numbers and . _ @ - (3-40 characters).")
+    taken = conn.execute("SELECT id FROM admins WHERE username=? COLLATE NOCASE", (name,)).fetchone()
+    if taken and taken["id"] != own_id:
+        raise ApiError("That username is already in use.")
+    return name
+
+
+# ---------- admin: team logins (master only)
+
+def require_master(req):
+    if (req.admin["role"] or "staff") != "master":
+        raise ApiError("Only the master admin can manage logins.", 403)
+
+
+@route("GET", "/api/admin/users", auth=True)
+def api_users(req, conn, body):
+    require_master(req)
+    users = rows(conn.execute("SELECT id, username, role, created_at, pw_changed_at, last_login FROM admins ORDER BY role='master' DESC, id"))
+    return {"users": users, "me": req.admin["id"]}
+
+
+@route("POST", "/api/admin/users", auth=True)
+def api_user_create(req, conn, body):
+    require_master(req)
+    name = check_username(conn, body.get("username"))
+    pw = check_password(body.get("password"))
+    role = "master" if body.get("role") == "master" else "staff"
+    h, s = hash_pw(pw)
+    uid = conn.execute("INSERT INTO admins(username,pw_hash,salt,created_at,pw_changed_at,role) VALUES(?,?,?,?,?,?)",
+                       (name, h, s, now(), now(), role)).lastrowid
+    conn.commit()
+    return {"ok": True, "id": uid}
+
+
+@route("PUT", r"/api/admin/users/(\d+)", auth=True)
+def api_user_update(req, conn, body, uid):
+    require_master(req)
+    uid = int(uid)
+    u = conn.execute("SELECT * FROM admins WHERE id=?", (uid,)).fetchone()
+    if not u:
+        raise ApiError("Login not found.", 404)
+    role = "master" if body.get("role") == "master" else "staff"
+    if u["role"] == "master" and role != "master" and \
+            conn.execute("SELECT COUNT(*) FROM admins WHERE role='master'").fetchone()[0] <= 1:
+        raise ApiError("There must always be at least one master admin.")
+    name = check_username(conn, body.get("username") or u["username"], uid)
+    conn.execute("UPDATE admins SET username=?, role=? WHERE id=?", (name, role, uid))
+    if body.get("password"):
+        h, s = hash_pw(check_password(body.get("password")))
+        conn.execute("UPDATE admins SET pw_hash=?, salt=?, pw_changed_at=? WHERE id=?", (h, s, now(), uid))
+        if uid != req.admin["id"]:
+            conn.execute("DELETE FROM sessions WHERE admin_id=?", (uid,))
+    conn.commit()
+    return {"ok": True}
+
+
+@route("DELETE", r"/api/admin/users/(\d+)", auth=True)
+def api_user_delete(req, conn, body, uid):
+    require_master(req)
+    uid = int(uid)
+    if uid == req.admin["id"]:
+        raise ApiError("You can't remove your own login.")
+    u = conn.execute("SELECT role FROM admins WHERE id=?", (uid,)).fetchone()
+    if not u:
+        raise ApiError("Login not found.", 404)
+    if u["role"] == "master" and conn.execute("SELECT COUNT(*) FROM admins WHERE role='master'").fetchone()[0] <= 1:
+        raise ApiError("There must always be at least one master admin.")
+    conn.execute("DELETE FROM sessions WHERE admin_id=?", (uid,))
+    conn.execute("DELETE FROM admins WHERE id=?", (uid,))
     conn.commit()
     return {"ok": True}
 
