@@ -248,11 +248,23 @@ button:active { transform: translateY(1px); }
 .close-btn { position: sticky; top: 12px; float: right; margin: 12px 12px 0 0; z-index: 3; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: #fff; display: grid; place-items: center; color: var(--ink-2); box-shadow: var(--shadow); }
 .close-btn:hover { background: var(--bg); }
 
-.kyc-card { max-width: 460px; padding: 28px; }
-.kyc-head { display: flex; gap: 14px; align-items: center; margin-bottom: 20px; }
-.kyc-head img { flex: none; width: auto; height: 76px; object-fit: contain; padding: 8px; border-radius: 18px; background: var(--night); }
-.kyc-head h2 { margin: 0 0 4px; font-size: 20px; line-height: 1.25; }
-.kyc-head p { margin: 0; font-size: 14px; }
+.kyc-card { max-width: 370px; padding: 20px 20px 14px; }
+.kyc-x { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--bg); color: var(--muted); }
+.kyc-x:hover { background: #ece8de; color: var(--ink); }
+.kyc-head { display: flex; gap: 12px; align-items: center; margin: 0 28px 14px 0; }
+.kyc-head img { flex: none; width: 46px; height: 46px; object-fit: contain; padding: 5px; border-radius: 12px; background: var(--night); }
+.kyc-head h2 { margin: 0 0 2px; font-size: 16.5px; line-height: 1.25; }
+.kyc-head p { margin: 0; font-size: 13px; }
+.kyc-card .field { margin-bottom: 9px; }
+.kyc-card .input-ic { height: 44px; }
+.kyc-card .check { margin: 2px 0 8px; font-size: 12.5px; }
+.kyc-card .form-error { min-height: 0; margin: 0 0 8px; }
+.kyc-card .form-error:empty { display: none; }
+.kyc-card .btn-block { height: 46px; }
+.kyc-skip { display: block; width: 100%; margin: 6px 0 2px; padding: 10px; border: 0; background: none; color: var(--ink-2); font-weight: 700; font-size: 14px; border-radius: 10px; }
+.kyc-skip:hover { background: var(--bg); }
+.kyc-card .tiny { margin: 2px 0 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .kyc-store { color: var(--gold-ink); }
 .field { display: block; margin-bottom: 14px; }
 .field > span { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--ink-2); }
@@ -364,7 +376,7 @@ button:active { transform: translateY(1px); }
   .enq { grid-template-columns: 1fr; }
   .modal { padding: 0; align-items: flex-end; }
   .modal-card { border-radius: 22px 22px 0 0; max-height: 94vh; }
-  .kyc-card { padding: 22px 18px; }
+  .kyc-card { padding: 18px 16px 12px; }
   .pd-info h1 { font-size: 21px; }
   .specs th { width: 42%; }
   .specs th, .specs td { padding: 10px 12px; }

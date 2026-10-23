@@ -69,28 +69,30 @@
   <div class="modal" id="kycModal" role="dialog" aria-modal="true" aria-labelledby="kycTitle" hidden>
     <div class="modal-backdrop"></div>
     <div class="modal-card kyc-card">
+      <button type="button" class="kyc-x" data-skip aria-label="Skip and browse"><span data-icon="x" data-size="18"></span></button>
       <div class="kyc-head">
-        <img src="/brand/ll-logo.png" alt="Leela Laher logo" height="72" class="kyc-logo">
+        <img src="/brand/ll-mark.png" alt="Leela Laher logo" class="kyc-logo">
         <div>
           <h2 id="kycTitle">Welcome to <span class="kyc-store">Leela Laher Tech Point</span></h2>
-          <p class="muted">Tell us a little about you to explore our latest products, prices and offers.</p>
+          <p class="muted">Share your details to get the best prices &amp; offers.</p>
         </div>
       </div>
       <form id="kycForm" novalidate>
-        <label class="field"><span>Full name</span>
-          <div class="input-ic"><span data-icon="user"></span><input name="name" autocomplete="name" required maxlength="60" placeholder="e.g. Rahul Sharma"></div>
+        <label class="field"><span class="sr-only">Full name</span>
+          <div class="input-ic"><span data-icon="user"></span><input name="name" autocomplete="name" required maxlength="60" placeholder="Your name" aria-label="Full name"></div>
         </label>
-        <label class="field"><span>Mobile number</span>
-          <div class="input-ic"><span class="prefix">+91</span><input name="mobile" inputmode="numeric" autocomplete="tel-national" required maxlength="14" placeholder="10-digit mobile"></div>
+        <label class="field"><span class="sr-only">Mobile number</span>
+          <div class="input-ic"><span class="prefix">+91</span><input name="mobile" inputmode="numeric" autocomplete="tel-national" required maxlength="14" placeholder="10-digit mobile" aria-label="Mobile number"></div>
         </label>
-        <label class="field"><span>City</span>
-          <div class="input-ic"><span data-icon="pin"></span><input name="city" list="cityList" autocomplete="address-level2" required maxlength="60" placeholder="Your city"></div>
+        <label class="field"><span class="sr-only">City</span>
+          <div class="input-ic"><span data-icon="pin"></span><input name="city" list="cityList" autocomplete="address-level2" required maxlength="60" placeholder="Your city" aria-label="City"></div>
         </label>
         <datalist id="cityList"></datalist>
-        <label class="check"><input type="checkbox" name="consent" checked> <span>I agree that Leela Laher Tech Point may contact me on this number about products and offers.</span></label>
+        <label class="check"><input type="checkbox" name="consent" checked> <span>You may contact me about products &amp; offers.</span></label>
         <p class="form-error" id="kycError" role="alert"></p>
-        <button class="btn-primary btn-block" type="submit"><span>Explore the catalogue</span><span data-icon="chevronRight"></span></button>
-        <p class="tiny muted center"><span data-icon="lock"></span> Your details are kept private and never shared.</p>
+        <button class="btn-primary btn-block" type="submit"><span>Explore with best offers</span><span data-icon="chevronRight"></span></button>
+        <button class="kyc-skip" type="button" data-skip>Skip, just browse</button>
+        <p class="tiny muted center"><span data-icon="lock"></span> Private &amp; never shared.</p>
       </form>
     </div>
   </div>

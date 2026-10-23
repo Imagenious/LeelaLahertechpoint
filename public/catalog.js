@@ -437,11 +437,45 @@
     $('#cityList').innerHTML = CITIES.map(c => `<option value="${c}">`).join('');
     $('#kycModal').hidden = false;
     document.body.style.overflow = 'hidden';
-    setTimeout(() => $('#kycForm [name=name]').focus(), 50);
+    if (matchMedia('(pointer: fine)').matches) setTimeout(() => $('#kycForm [name=name]').focus(), 50);
   }
+  // "Skip, just browse": count an anonymous visit, then let the genie offer help a little later
+  const ASK_DELAY = 12000;
+  function skipKyc() {
+    $('#kycModal').hidden = true;
+    document.body.style.overflow = $('#productModal').hidden ? '' : 'hidden';
+    store.sset('llSkip', '1');
+    startAnonymous();
+  }
+  async function startAnonymous() {
+    if (!store.sget('llVisit')) {
+      try {
+        const r = await api('/api/visit', { anonymous: true });
+        store.sset('llAnonVisit', String(r.visit_id));
+        store.sset('llVisit', '1');
+      } catch (e) { /* offline - let them browse */ }
+    }
+    if (window.Genie) Genie.showHelpButton(null);
+    scheduleAsk();
+  }
+  function scheduleAsk() {
+    if (!window.Genie || store.sget('llAskDone')) return;
+    clearTimeout(scheduleAsk.t);
+    scheduleAsk.t = setTimeout(() => {
+      if ((visitor() || {}).token || store.sget('llAskDone') || !$('#kycModal').hidden) return;
+      store.sset('llAskDone', '1');
+      Genie.ask(async (name, mobile) => {
+        const r = await api('/api/visit', { name, mobile, consent: true, quick: true, anon_visit: store.sget('llAnonVisit') });
+        store.set(LS_KEY, r);
+        return r;
+      });
+    }, ASK_DELAY);
+  }
+  document.querySelectorAll('[data-skip]').forEach(b => b.addEventListener('click', skipKyc));
+
   async function startVisit() {
     const v = visitor();
-    if (!v || !v.token) return showKyc();
+    if (!v || !v.token) return store.sget('llSkip') ? startAnonymous() : showKyc();
     if (store.sget('llVisit')) { if (window.Genie) Genie.showHelpButton(v); return; }
     try {
       const r = await api('/api/visit', { token: v.token });
@@ -464,7 +498,7 @@
     const btn = f.querySelector('button[type=submit]');
     btn.disabled = true;
     try {
-      const r = await api('/api/visit', body);
+      const r = await api('/api/visit', Object.assign(body, { anon_visit: store.sget('llAnonVisit') }));
       store.set(LS_KEY, r);
       store.sset('llVisit', '1');
       $('#kycModal').hidden = true;
@@ -519,6 +553,7 @@
     if (e.target.closest('a[href="#categories"]')) { e.preventDefault(); $('#categories') && $('#categories').scrollIntoView({ behavior: 'smooth' }); }
   });
   document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !$('#kycModal').hidden) return skipKyc();
     if (e.key === 'Escape' && !$('#productModal').hidden && $('#kycModal').hidden) $('#productModal [data-close]').click();
   });
   $('#topWa').onclick = () => enquire('whatsapp', null);

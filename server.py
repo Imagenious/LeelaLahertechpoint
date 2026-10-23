@@ -27,8 +27,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 APP_NAME = "Leela Laher Tech Point - Digital Catalogue"
-VERSION = "1.6.0"
-RELEASED = "2026-10-16"
+VERSION = "1.7.0"
+RELEASED = "2026-10-23"
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 PUBLIC = os.path.join(BASE, "public")
@@ -408,6 +408,11 @@ def find_visitor(conn, token):
 @route("POST", "/api/visit")
 def api_visit(req, conn, body):
     req.rate_check()
+    if body.get("anonymous"):
+        # visitor chose "Skip, just browse": count the visit without personal details
+        vid = conn.execute("INSERT INTO visits(visitor_id,ts) VALUES(NULL,?)", (now(),)).lastrowid
+        conn.commit()
+        return {"anonymous": True, "visit_id": vid}
     v = find_visitor(conn, body.get("token"))
     ua = clean(req.headers.get("User-Agent", ""), 250)
     if not v:
@@ -416,23 +421,31 @@ def api_visit(req, conn, body):
         name = clean(body.get("name"), 60)
         mobile = normalise_mobile(body.get("mobile"))
         city = clean(body.get("city"), 60)
+        quick = bool(body.get("quick"))     # genie quick form: name + mobile, city optional
         if len(name) < 2:
             raise ApiError("Please enter your full name.")
         if not re.fullmatch(r"[6-9]\d{9}", mobile):
             raise ApiError("Please enter a valid 10-digit mobile number.")
-        if len(city) < 2:
+        if len(city) < 2 and not (quick and not city):
             raise ApiError("Please enter your city.")
         if not body.get("consent"):
             raise ApiError("Please accept the consent to continue.")
         v = conn.execute("SELECT * FROM visitors WHERE mobile=?", (mobile,)).fetchone()
         if v:
-            conn.execute("UPDATE visitors SET name=?, city=?, consent=1 WHERE id=?", (name, city, v["id"]))
+            conn.execute("UPDATE visitors SET name=?, city=CASE WHEN ?<>'' THEN ? ELSE city END, consent=1 WHERE id=?",
+                         (name, city, city, v["id"]))
         else:
             conn.execute("""INSERT INTO visitors(token,name,mobile,city,consent,first_seen,last_seen,visits,user_agent)
                             VALUES(?,?,?,?,1,?,?,0,?)""", (secrets.token_urlsafe(24), name, mobile, city, now(), now(), ua))
         v = conn.execute("SELECT * FROM visitors WHERE mobile=?", (mobile,)).fetchone()
     conn.execute("UPDATE visitors SET visits=visits+1, last_seen=?, user_agent=? WHERE id=?", (now(), ua, v["id"]))
-    conn.execute("INSERT INTO visits(visitor_id,ts) VALUES(?,?)", (v["id"], now()))
+    # a visitor who skipped earlier and now shares details: attach that same visit instead of counting a new one
+    anon = to_int(body.get("anon_visit"))
+    linked = anon and conn.execute(
+        "UPDATE visits SET visitor_id=? WHERE id=? AND visitor_id IS NULL AND ts>=?",
+        (v["id"], anon, (datetime.now() - timedelta(days=1)).isoformat(timespec="seconds"))).rowcount
+    if not linked:
+        conn.execute("INSERT INTO visits(visitor_id,ts) VALUES(?,?)", (v["id"], now()))
     conn.commit()
     return {"token": v["token"], "name": v["name"], "city": v["city"], "mobile": v["mobile"]}
 
@@ -626,6 +639,7 @@ def api_stats(req, conn, body):
 
     kpi = {
         "visits": one("SELECT COUNT(*) FROM visits WHERE ts>=?", co),
+        "anon_visits": one("SELECT COUNT(*) FROM visits WHERE visitor_id IS NULL AND ts>=?", co),
         "unique_visitors": one("SELECT COUNT(DISTINCT visitor_id) FROM visits WHERE ts>=?", co),
         "new_customers": one("SELECT COUNT(*) FROM visitors WHERE first_seen>=?", co),
         "total_customers": one("SELECT COUNT(*) FROM visitors"),

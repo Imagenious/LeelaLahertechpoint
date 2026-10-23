@@ -138,7 +138,7 @@
       <div class="toolbar"><div class="seg" id="range">${[[1, 'Today'], [7, '7 days'], [30, '30 days'], [90, '90 days'], [0, 'All time']].map(([v, l]) => `<button type="button" data-d="${v}" class="${A.days === v ? 'active' : ''}">${l}</button>`).join('')}</div>
         <span class="grow"></span><a class="btn" href="/" target="_blank" rel="noopener">${icon('eye', 16)} Open catalogue</a></div>
       <div class="kpis">
-        ${kpi('trend', 'Catalogue visits', fmt(k.visits), `${fmt(k.visits_today)} today`)}
+        ${kpi('trend', 'Catalogue visits', fmt(k.visits), `${fmt(k.visits_today)} today${k.anon_visits ? ' · ' + fmt(k.anon_visits) + ' skipped details' : ''}`)}
         ${kpi('users', 'Unique visitors', fmt(k.unique_visitors), `${fmt(k.new_customers)} new · ${fmt(k.total_customers)} in database`)}
         ${kpi('eye', 'Product views', fmt(k.product_views), `${fmt(k.products)} live products`)}
         ${kpi('message', 'Enquiries', fmt(k.enquiries), `${fmt(k.enq_whatsapp)} WhatsApp · ${fmt(k.enq_email)} email${k.enq_call ? ' · ' + fmt(k.enq_call) + ' call' : ''}`)}

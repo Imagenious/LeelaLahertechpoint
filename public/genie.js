@@ -131,6 +131,60 @@
     node.querySelector('[data-gn=tour]').onclick = () => { clearTimeout(t); closeCurrent(); startTour(visitor); };
   }
 
+  // gentle "can we help?" card for visitors who skipped the welcome form
+  function ask(onSubmit) {
+    closeCurrent();
+    document.body.classList.add('gn-asking');
+    const node = el(`
+      <div class="gn-ask" role="dialog" aria-labelledby="gnAskTitle">
+        <div class="gn-ask-genie">${GENIE}</div>
+        <div class="gn-ask-card">
+          <button type="button" class="gn-x" data-gn="close" aria-label="No thanks">${ic('x', 16)}</button>
+          <div class="gn-ask-body">
+            <strong id="gnAskTitle">${greeting()}! Need help choosing?</strong>
+            <span>I'm your Tech Genie. Share your number and our team will WhatsApp you the <b>best price</b> and offers.</span>
+            <form class="gn-ask-form" novalidate>
+              <input name="name" autocomplete="name" maxlength="60" placeholder="Your name" aria-label="Your name">
+              <div class="gn-ask-mobile"><span>+91</span><input name="mobile" inputmode="numeric" autocomplete="tel-national" maxlength="14" placeholder="10-digit mobile" aria-label="Mobile number"></div>
+              <p class="gn-ask-err" role="alert"></p>
+              <button type="submit" class="gn-btn gold sm">${ic('whatsapp', 16)} Get best price</button>
+              <button type="button" class="gn-link gn-ask-no" data-gn="close">No thanks, I'm just browsing</button>
+              <small>By sharing, you agree we may contact you about products &amp; offers.</small>
+            </form>
+          </div>
+        </div>
+      </div>`);
+    document.body.appendChild(node);
+    current = node;
+    const done = () => { document.body.classList.remove('gn-asking'); closeCurrent(); };
+    node.querySelectorAll('[data-gn=close]').forEach(b => b.onclick = done);
+    node.addEventListener('keydown', e => { if (e.key === 'Escape') done(); });
+    const f = node.querySelector('form'), err = node.querySelector('.gn-ask-err');
+    f.addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = f.name.value.trim(), digits = f.mobile.value.replace(/\D/g, '').replace(/^(91|0)(?=\d{10}$)/, '');
+      if (name.length < 2) { err.textContent = 'Please enter your name.'; return f.name.focus(); }
+      if (!/^[6-9]\d{9}$/.test(digits)) { err.textContent = 'Please enter a valid 10-digit mobile number.'; return f.mobile.focus(); }
+      err.textContent = '';
+      const btn = f.querySelector('[type=submit]');
+      btn.disabled = true;
+      try {
+        const v = await onSubmit(name, digits);
+        node.querySelector('.gn-ask-body').innerHTML = `
+          <strong>Thank you, ${esc(firstName(v))}!</strong>
+          <span>Our team will reach out to you shortly. Want help right now?</span>
+          <button type="button" class="gn-btn gold sm" data-general="whatsapp">${ic('whatsapp', 16)} Chat on WhatsApp</button>`;
+        node.classList.add('thanks');
+        setTimeout(() => { if (current === node) { node.classList.add('out'); setTimeout(done, 400); } }, 9000);
+      } catch (ex) {
+        err.textContent = ex.message || 'Something went wrong, please try again.';
+        btn.disabled = false;
+      }
+    });
+    // focus the first field on computers only (on phones it would pop the keyboard up unasked)
+    if (matchMedia('(pointer: fine)').matches) setTimeout(() => f.name.focus({ preventScroll: true }), 350);
+  }
+
   // ---------- guided tour with spotlight
   const STEPS = [
     { sel: '#catNav', icon: 'grid', title: 'Pick a category',
@@ -254,5 +308,5 @@
     else { peek(visitor); showHelpButton(visitor); }
   }
 
-  window.Genie = { greet, welcome, startTour, showHelpButton };
+  window.Genie = { greet, welcome, startTour, showHelpButton, ask };
 })();
