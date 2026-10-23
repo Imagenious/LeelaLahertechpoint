@@ -1,6 +1,6 @@
 # Leela Laher Tech Point - Digital Catalogue
 
-**Version 1.7.0** (released 2026-10-23)
+**Version 1.8.0** (released 2026-10-23)
 
 An online catalogue for the showroom. Customers browse products by category, see pictures, specs and prices, and send an enquiry on WhatsApp or by email in one tap. The owner gets a password-protected admin panel with a visitor dashboard and a customer database.
 
@@ -25,6 +25,7 @@ python server.py
 Customers on the same Wi-Fi as the computer can open `http://<this-computer's-IP>:8080/`.
 
 ## Version history
+- **1.8.0** - Festive themes, switched in Admin > Settings > Festive theme. **Diwali** (on by default in this release): night-sky hero with fireworks, swinging lanterns, flickering diyas, a rotating rangoli under the logo platform, a marigold toran under the header, a "Happy Diwali!" strip with a festive-offers WhatsApp button, and "Happy Diwali" greetings from the hero and the Tech Genie. Choose **Off** to return to the regular look.
 - **1.7.0** - Smaller welcome window with **Skip, just browse** (also the close button or Esc). Visitors who skip are still counted on the dashboard. About 12 seconds after skipping, the Tech Genie pops up in a corner offering the best price on WhatsApp in exchange for name and mobile (city optional); that visit is then linked to the customer instead of being counted twice. Phones no longer pop the keyboard up automatically.
 - **1.6.0** - About us photos in a larger square gold frame with corner accents; tap a photo to view it full size. Master / staff admin logins: the owner's login is the **Master** and can add, edit and remove staff logins in Admin > Settings > Team logins (staff can't manage logins). `reset_admin.py` resets the master login if the password is forgotten.
 - **1.5.1** - Pre-deployment check (119 automated server checks plus customer and admin pages tested at phone and desktop sizes). Fixed: the privacy note on the welcome form could cover the City box and block typing. Admin login cookie is marked Secure when served over HTTPS. Added `wsgi.py` for PythonAnywhere. New installs get a random first admin password (no fixed default).

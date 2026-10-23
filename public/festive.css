@@ -1,0 +1,91 @@
+/* Festive themes - only active when <body> has the theme class (Admin > Settings > Festive theme) */
+
+/* ===================== Diwali ===================== */
+.theme-diwali { --fs-gold: #ffd36b; --fs-saffron: #ff8a3d; --fs-maroon: #5c1a1a; }
+
+/* greeting strip + marigold toran in the header */
+.festive-strip { background: linear-gradient(90deg, #4a0d2b, #7c1d1d 35%, #9a3412 65%, #4a0d2b); color: #fff7e0; font-size: 13.5px; }
+.festive-strip-in { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 38px; padding-top: 3px; padding-bottom: 3px; text-align: center; }
+.festive-strip strong { color: var(--fs-gold); letter-spacing: .02em; }
+.fs-mini { width: 26px; height: 26px; flex: none; }
+.fs-mini svg { width: 100%; height: 100%; }
+.fs-cta { flex: none; height: 28px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255,211,107,.6); background: rgba(255,211,107,.14); color: #ffe7a3; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.fs-cta:hover { background: rgba(255,211,107,.28); }
+.theme-diwali .topbar { position: sticky; }
+.toran { position: absolute; left: 0; right: 0; bottom: -30px; height: 34px; background-repeat: repeat-x; background-size: 64px 34px; pointer-events: none; filter: drop-shadow(0 3px 3px rgba(0,0,0,.18)); animation: fsSway 6s ease-in-out infinite; transform-origin: top center; }
+@keyframes fsSway { 50% { transform: translateY(1px) rotate(.15deg); } }
+.theme-diwali #app { padding-top: 40px; }
+
+/* hero becomes a Diwali night sky */
+.theme-diwali .hero {
+  background:
+    radial-gradient(620px 420px at 72% 46%, rgba(255,170,60,.34), transparent 70%),
+    radial-gradient(420px 300px at 8% 10%, rgba(199,125,255,.22), transparent 70%),
+    radial-gradient(500px 260px at 50% 110%, rgba(255,120,40,.35), transparent 70%),
+    linear-gradient(180deg, #170a2c 0%, #33103a 50%, #57182a 100%);
+  border-color: rgba(255,200,110,.25); box-shadow: 0 24px 60px rgba(60,10,30,.35); padding-bottom: 66px; }
+@media (max-width: 640px) { .theme-diwali .hero { padding-bottom: 54px; } }
+.theme-diwali .hero-bg .skyline { opacity: .14; filter: brightness(0); }
+.theme-diwali .hero-bg .haze { display: none; }
+.theme-diwali .hero-bg .floor { background-image: linear-gradient(rgba(255,190,90,.16) 1px, transparent 1px), linear-gradient(90deg, rgba(255,190,90,.16) 1px, transparent 1px); }
+.theme-diwali .particle { background: #ffd36b; box-shadow: 0 0 8px 2px rgba(255,180,60,.75); }
+.theme-diwali .hero h1 { color: #fff; }
+.theme-diwali .hero h1 .shine { background-image: linear-gradient(100deg, #ffb347 0%, #ffd36b 28%, #fff4c2 50%, #ffd36b 72%, #ffb347 100%); }
+.theme-diwali .hero p.lead { color: rgba(255,244,230,.85); }
+.theme-diwali .hello { background: rgba(255,255,255,.1); border-color: rgba(255,211,107,.5); color: #ffe7a3; }
+.theme-diwali .hero .btn-ghost { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(255,255,255,.28); }
+.theme-diwali .hero .btn-ghost:hover { background: rgba(255,255,255,.18); }
+.theme-diwali .hero-stats > div { background: rgba(255,255,255,.08); border-color: rgba(255,211,107,.28); box-shadow: none; }
+.theme-diwali .hero-stats strong { color: var(--fs-gold); }
+.theme-diwali .hero-stats span { color: rgba(255,244,230,.72); }
+
+/* 3D scene in festive colours */
+.theme-diwali .portal { border-color: rgba(255,220,140,.95); box-shadow: 0 0 2.4em rgba(255,170,60,.9), inset 0 0 2.4em rgba(255,170,60,.6); }
+.theme-diwali .portal::after { border-color: rgba(255,200,110,.5); }
+.theme-diwali .beam { background: linear-gradient(to top, rgba(255,190,90,.55), rgba(255,210,140,.12) 60%, rgba(255,210,140,0)); }
+.theme-diwali .track { border-color: rgba(255,190,90,.65); box-shadow: 0 0 2em rgba(255,170,60,.6), inset 0 0 2em rgba(255,170,60,.35); }
+.theme-diwali .track.t2 { border-color: rgba(255,240,180,.6); box-shadow: none; }
+.theme-diwali .track.t3 { border-color: rgba(255,190,90,.25); box-shadow: none; }
+.theme-diwali .glowpad { background: radial-gradient(circle, rgba(255,190,90,.7), rgba(255,190,90,0) 70%); }
+.theme-diwali .logo-halo { background: radial-gradient(closest-side, rgba(45,14,40,.96) 0%, rgba(45,14,40,.88) 45%, rgba(60,18,40,.45) 72%, rgba(60,18,40,0) 100%); }
+.theme-diwali .center-logo { filter: drop-shadow(0 0 .08em rgba(80,55,0,.9)) drop-shadow(0 0 1.4em rgba(255,190,80,.55)) drop-shadow(0 1em 1.2em rgba(0,0,0,.35)); }
+.theme-diwali .dev-art { filter: drop-shadow(0 1.2em 1.1em rgba(0,0,0,.45)); }
+
+/* festive layer: fireworks, lanterns, diyas */
+.fs-layer { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; border-radius: inherit; }
+.theme-diwali .hero-copy, .theme-diwali .hero-stage { position: relative; z-index: 2; }
+.fs-fireworks { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fs-lantern { position: absolute; top: -6px; width: 46px; transform-origin: 50% 0; animation: fsSwing 4.2s ease-in-out infinite; filter: drop-shadow(0 0 14px rgba(255,150,50,.55)); }
+.fs-lantern svg { width: 100%; height: auto; display: block; }
+.fs-lantern.l1 { left: 3%; animation-delay: -1s; }
+.fs-lantern.l2 { right: 4%; width: 54px; animation-delay: -2.4s; }
+.fs-lantern.l3 { left: 46%; width: 34px; top: -18px; animation-delay: -.3s; opacity: .85; }
+@keyframes fsSwing { 0%, 100% { transform: rotate(5deg); } 50% { transform: rotate(-5deg); } }
+.fs-diyas { position: absolute; left: 0; right: 0; bottom: 6px; display: flex; justify-content: space-around; padding: 0 2%; }
+.fs-diya { width: 44px; height: 44px; }
+.fs-diya svg { width: 100%; height: 100%; overflow: visible; }
+.fs-diya .fs-flame { transform-box: fill-box; transform-origin: 50% 100%; animation: fsFlicker 1.3s ease-in-out infinite; animation-delay: var(--d); }
+.fs-diya .fs-glow { transform-box: fill-box; transform-origin: center; animation: fsGlowPulse 1.3s ease-in-out infinite; animation-delay: var(--d); }
+.fs-mini .fs-flame { transform-box: fill-box; transform-origin: 50% 100%; animation: fsFlicker 1.1s ease-in-out infinite; }
+@keyframes fsFlicker { 0%, 100% { transform: scale(1, 1) rotate(0); } 25% { transform: scale(.92, 1.08) rotate(-3deg); } 50% { transform: scale(1.05, .94) rotate(2deg); } 75% { transform: scale(.96, 1.05) rotate(-1deg); } }
+@keyframes fsGlowPulse { 50% { opacity: .65; transform: scale(.9); } }
+
+/* rangoli on the floor of the 3D scene */
+.fs-rangoli { position: absolute; inset: 6.5em; border-radius: 50%; animation: flatspin 120s linear infinite; opacity: .95; filter: drop-shadow(0 0 1em rgba(255,170,60,.35)); }
+.fs-rangoli svg { width: 100%; height: 100%; display: block; }
+
+@media (max-width: 900px) {
+  .fs-lantern.l3 { display: none; }
+}
+@media (max-width: 640px) {
+  .festive-strip { font-size: 12.5px; }
+  .festive-strip-in { gap: 8px; }
+  .fs-lantern { width: 32px; }
+  .fs-lantern.l2 { width: 36px; }
+  .fs-diya { width: 34px; height: 34px; }
+  .fs-diya:nth-child(n+6) { display: none; }
+  .toran { bottom: -26px; height: 30px; background-size: 56px 30px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fs-lantern, .toran, .fs-rangoli, .fs-diya .fs-flame, .fs-diya .fs-glow, .fs-mini .fs-flame { animation: none !important; }
+}

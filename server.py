@@ -27,7 +27,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 APP_NAME = "Leela Laher Tech Point - Digital Catalogue"
-VERSION = "1.7.0"
+VERSION = "1.8.0"
 RELEASED = "2026-10-23"
 
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -55,6 +55,7 @@ DEFAULT_SETTINGS = {
     "hours": "Mon-Sat 10:00 AM - 8:30 PM",
     "price_note": "Prices are indicative and may change. Contact us for the best offer.",
     "show_prices": "1",
+    "theme": "diwali",   # festive theme: "" (off) or "diwali" - switch in Admin > Settings
 }
 
 # Content of the "About us" page (stored as JSON in settings, editable in Admin > Settings)
@@ -952,6 +953,8 @@ def api_settings_save(req, conn, body):
                     v = "https://" + v
                 if not re.fullmatch(r"https?://[\w.-]+\.[a-z]{2,}(/[\w./%#?=&-]*)?", v, re.I):
                     raise ApiError("Please enter a valid website, e.g. www.yourshop.com")
+            if k == "theme":
+                v = v if v in ("", "diwali") else ""
             if k == "show_prices":
                 v = "1" if body[k] in (True, "1", 1, "true") else "0"
             conn.execute("INSERT OR REPLACE INTO settings(key,value) VALUES(?,?)", (k, v))

@@ -534,6 +534,10 @@
             <label class="field"><span>Website</span><input name="website" value="${esc(s.website || '')}" placeholder="www.yourshop.com"></label>
             <label class="field"><span>Price note (under the price)</span><input name="price_note" value="${esc(s.price_note)}"></label>
             <div class="checks" style="margin-bottom:14px"><label><input type="checkbox" name="show_prices" ${s.show_prices === '1' ? 'checked' : ''}> Show prices on the catalogue</label></div>
+            <label class="field"><span>Festive theme</span><select name="theme">
+              <option value="" ${!s.theme ? 'selected' : ''}>Off (regular look)</option>
+              <option value="diwali" ${s.theme === 'diwali' ? 'selected' : ''}>Diwali: fireworks, diyas, lanterns, rangoli</option>
+            </select><small>Changes the catalogue's look for the festival. Switch it off here when the season is over.</small></label>
             <p class="form-error" id="sErr"></p>
             <button class="btn primary" type="submit">${icon('check', 16)} Save details</button>
           </form></div>
@@ -565,6 +569,7 @@
       const f = e.target, body = {};
       ['store_name', 'tagline', 'whatsapp', 'email', 'phone', 'hours', 'address', 'website', 'price_note'].forEach(k => body[k] = f[k].value.trim());
       body.show_prices = f.show_prices.checked;
+      body.theme = f.theme.value;
       try { await api('/api/admin/settings', 'PUT', body); $('#sErr').textContent = ''; toast('Settings saved'); refreshMe(); } catch (ex) { $('#sErr').textContent = ex.message; }
     };
     $('#pw').onsubmit = async e => {

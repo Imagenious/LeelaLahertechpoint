@@ -99,7 +99,7 @@
         <a class="link" href="#/c/${esc(c.slug)}">See all ${icon('chevronRight', 16)}</a></div>${grid(list)}`;
     }).join('');
     const hour = new Date().getHours();
-    const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    const greet = (window.Festive && Festive.greeting()) || (hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
     const first = v && v.name ? v.name.trim().split(/\s+/)[0] : '';
     const brands = [...new Set(S.products.map(p => p.brand).filter(Boolean))];
     app.innerHTML = `
@@ -151,6 +151,7 @@
           <div><h3>Need help choosing?</h3><p>Tell us your budget and needs. We'll suggest the best option. <a class="link" href="#" data-general="whatsapp">Ask on WhatsApp ${icon('chevronRight', 14)}</a></p></div></div>
       </div>
       ${catSections}`;
+    if (window.Festive) Festive.hero(app.querySelector('.hero'));
   }
 
   // 3D showroom: logo on a holographic platform, category devices orbiting around it
@@ -518,6 +519,7 @@
     window.LL_STORE_NAME = s.store_name;
     window.LL_TOAST = toast;
     window.LL_VISITOR = visitor;
+    if (window.Festive) Festive.apply(s.theme, s.store_name);
     ['storeName', 'footName'].forEach(id => $('#' + id).textContent = s.store_name);
     document.querySelectorAll('.kyc-store').forEach(el => el.textContent = s.store_name);
     $('#storeTag').textContent = s.tagline || 'Digital Catalogue';

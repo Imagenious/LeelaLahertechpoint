@@ -61,7 +61,7 @@
   </svg>`;
 
   // ---------- helpers
-  const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };
+  const greeting = () => { const f = window.Festive && Festive.greeting(); if (f) return f; const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };
   const firstName = v => ((v && v.name) || '').trim().split(/\s+/)[0] || 'friend';
   const esc = window.esc;
   const ic = (n, s) => window.icon(n, s || 18);
