@@ -27,7 +27,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 APP_NAME = "Leela Laher Tech Point - Digital Catalogue"
-VERSION = "1.8.0"
+VERSION = "1.9.0"
 RELEASED = "2026-10-23"
 
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -151,6 +151,8 @@ CREATE TABLE IF NOT EXISTS enquiries(
 CREATE INDEX IF NOT EXISTS ix_visits_ts ON visits(ts);
 CREATE INDEX IF NOT EXISTS ix_events_ts ON events(ts);
 CREATE INDEX IF NOT EXISTS ix_enq_ts ON enquiries(ts);
+CREATE TABLE IF NOT EXISTS likes(visitor_id INTEGER NOT NULL, product_id INTEGER NOT NULL, ts TEXT,
+  PRIMARY KEY(visitor_id, product_id));
 """
 
 
@@ -482,6 +484,57 @@ def api_enquiry(req, conn, body):
     conn.commit()
     return {"ok": True}
 
+
+# ---------- customer profile & liked (heart-marked) products
+
+def visitor_or_401(conn, body):
+    v = find_visitor(conn, body.get("token"))
+    if not v:
+        raise ApiError("Please share your details first.", 401)
+    return v
+
+
+@route("POST", "/api/profile")
+def api_profile(req, conn, body):
+    req.rate_check()
+    v = find_visitor(conn, body.get("token"))
+    if not v:
+        return {"need_kyc": True}
+    likes = [r[0] for r in conn.execute("SELECT product_id FROM likes WHERE visitor_id=? ORDER BY ts DESC", (v["id"],))]
+    enquiries = rows(conn.execute(
+        """SELECT q.id, q.ts, q.channel, q.status, q.product_id, p.name AS product FROM enquiries q
+           LEFT JOIN products p ON p.id=q.product_id WHERE q.visitor_id=? ORDER BY q.id DESC LIMIT 100""", (v["id"],)))
+    return {"visitor": {"name": v["name"], "mobile": v["mobile"], "city": v["city"], "since": v["first_seen"]},
+            "likes": likes, "enquiries": enquiries}
+
+
+@route("POST", "/api/like")
+def api_like(req, conn, body):
+    req.rate_check()
+    v = visitor_or_401(conn, body)
+    pid = to_int(body.get("product_id"))
+    if not pid or not conn.execute("SELECT 1 FROM products WHERE id=?", (pid,)).fetchone():
+        raise ApiError("Unknown product", 404)
+    if body.get("liked"):
+        conn.execute("INSERT OR IGNORE INTO likes(visitor_id,product_id,ts) VALUES(?,?,?)", (v["id"], pid, now()))
+    else:
+        conn.execute("DELETE FROM likes WHERE visitor_id=? AND product_id=?", (v["id"], pid))
+    conn.commit()
+    return {"ok": True, "liked": bool(body.get("liked"))}
+
+
+@route("POST", "/api/likes/sync")
+def api_likes_sync(req, conn, body):
+    """Save hearts tapped before the customer shared their details."""
+    req.rate_check()
+    v = visitor_or_401(conn, body)
+    ids = {to_int(i) for i in (body.get("product_ids") or [])[:200] if str(i).isdigit()}
+    valid = {r[0] for r in conn.execute("SELECT id FROM products")}
+    for pid in ids & valid:
+        conn.execute("INSERT OR IGNORE INTO likes(visitor_id,product_id,ts) VALUES(?,?,?)", (v["id"], pid, now()))
+    conn.commit()
+    return {"ok": True, "saved": len(ids & valid)}
+
 # ---------- admin: auth
 
 
@@ -650,6 +703,7 @@ def api_stats(req, conn, body):
         "enq_email": one("SELECT COUNT(*) FROM enquiries WHERE channel='email' AND ts>=?", co),
         "enq_call": one("SELECT COUNT(*) FROM enquiries WHERE channel='call' AND ts>=?", co),
         "enq_visitors": one("SELECT COUNT(DISTINCT visitor_id) FROM enquiries WHERE ts>=?", co),
+        "likes": one("SELECT COUNT(*) FROM likes WHERE ts>=?", co),
         "enq_open": one("SELECT COUNT(*) FROM enquiries WHERE status='new'"),
         "products": one("SELECT COUNT(*) FROM products WHERE active=1"),
         "visits_today": one("SELECT COUNT(*) FROM visits WHERE ts>=?", datetime.now().strftime("%Y-%m-%d")),
@@ -663,6 +717,10 @@ def api_stats(req, conn, body):
                   SUM(q.channel='whatsapp') AS wa, SUM(q.channel='email') AS em FROM enquiries q
            JOIN products p ON p.id=q.product_id LEFT JOIN categories c ON c.id=p.category_id
            WHERE q.ts>=? GROUP BY p.id ORDER BY n DESC LIMIT 10""", (co,)))
+    top_liked = rows(conn.execute(
+        """SELECT p.id, p.name, p.brand, c.name AS category, COUNT(*) AS n FROM likes l
+           JOIN products p ON p.id=l.product_id LEFT JOIN categories c ON c.id=p.category_id
+           WHERE l.ts>=? GROUP BY p.id ORDER BY n DESC LIMIT 10""", (co,)))
     cities = rows(conn.execute(
         """SELECT MIN(v.city) AS city, COUNT(DISTINCT v.id) AS n FROM visits x JOIN visitors v ON v.id=x.visitor_id
            WHERE x.ts>=? GROUP BY lower(trim(v.city)) ORDER BY n DESC LIMIT 8""", (co,)))
@@ -688,13 +746,14 @@ def api_stats(req, conn, body):
            LEFT JOIN visitors v ON v.id=q.visitor_id LEFT JOIN products p ON p.id=q.product_id
            ORDER BY q.id DESC LIMIT 8"""))
     return {"days": days, "kpi": kpi, "top_viewed": top_viewed, "top_enquired": top_enquired,
-            "cities": cities, "category_views": cat_views, "trend": trend, "recent_enquiries": recent}
+            "top_liked": top_liked, "cities": cities, "category_views": cat_views, "trend": trend, "recent_enquiries": recent}
 
 # ---------- admin: customers & enquiries
 
 VISITOR_SQL = """SELECT v.id, v.name, v.mobile, v.city, v.first_seen, v.last_seen, v.visits,
        (SELECT COUNT(*) FROM events e WHERE e.visitor_id=v.id AND e.type='view') AS views,
-       (SELECT COUNT(*) FROM enquiries q WHERE q.visitor_id=v.id) AS enquiries
+       (SELECT COUNT(*) FROM enquiries q WHERE q.visitor_id=v.id) AS enquiries,
+       (SELECT COUNT(*) FROM likes l WHERE l.visitor_id=v.id) AS likes
        FROM visitors v WHERE (?='' OR v.name LIKE ? OR v.mobile LIKE ? OR v.city LIKE ?)
        ORDER BY v.last_seen DESC"""
 
@@ -723,7 +782,7 @@ def api_visitors(req, conn, body):
 @route("GET", "/api/admin/visitors.csv", auth=True)
 def api_visitors_csv(req, conn, body):
     data = visitor_rows(conn, "")
-    cols = ["name", "mobile", "city", "first_seen", "last_seen", "visits", "views", "enquiries"]
+    cols = ["name", "mobile", "city", "first_seen", "last_seen", "visits", "views", "likes", "enquiries"]
     return ("csv", "customers-%s.csv" % datetime.now().strftime("%Y%m%d"), cols, data)
 
 
@@ -816,6 +875,7 @@ def api_product_toggle(req, conn, body, pid):
 
 @route("DELETE", r"/api/admin/products/(\d+)", auth=True)
 def api_product_delete(req, conn, body, pid):
+    conn.execute("DELETE FROM likes WHERE product_id=?", (int(pid),))
     conn.execute("DELETE FROM products WHERE id=?", (int(pid),))
     conn.commit()
     return {"ok": True}

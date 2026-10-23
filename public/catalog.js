@@ -68,7 +68,7 @@
       (off ? `<span class="mrp">${inr(p.mrp)}</span><span class="off">${off}% off</span>` : '');
   }
   function card(p) {
-    return `<a class="card" href="#/p/${p.id}">
+    return `<div class="card-wrap"><a class="card" href="#/p/${p.id}">
       <div class="media">${p.badge ? `<span class="badge ${badgeClass(p.badge)}">${esc(p.badge)}</span>` : ''}
         ${p.representative && p.images && p.images.length ? '<span class="rep-tag">Representative image</span>' : ''}
         ${p.in_stock ? '' : '<span class="oos">Out of stock</span>'}${media(p)}</div>
@@ -78,8 +78,9 @@
         <p class="short">${esc(p.short)}</p>
         <div class="price-row">${priceHtml(p)}</div>
         <div class="cta"><span>View details & specs</span>${icon('chevronRight', 16)}</div>
-      </div></a>`;
+      </div></a>${heartBtn(p.id)}</div>`;
   }
+  const heartBtn = id => `<button type="button" class="heart" data-like="${id}" aria-pressed="false" aria-label="Add to liked products">${icon('heart', 18)}</button>`;
   const grid = list => list.length ? `<div class="grid">${list.map(card).join('')}</div>` :
     `<div class="empty"><div class="e-ic">${icon('search', 28)}</div><h3>No products found</h3><p>Try another search or category - or ask us on WhatsApp, we probably have it!</p></div>`;
 
@@ -344,7 +345,8 @@
         <div class="pd-info">
           <div class="crumbs" style="margin-bottom:8px"><a href="#/c/${esc(c.slug)}" data-nav>${esc(c.name)}</a>${sub ? icon('chevronRight', 14) + `<a href="#/c/${esc(c.slug)}/${sub.id}" data-nav>${esc(sub.name)}</a>` : ''}</div>
           <span class="brand-l">${esc(p.brand)}${p.model ? ' · ' + esc(p.model) : ''}</span>
-          <h1 id="pmTitle">${esc(p.name)}</h1>
+          <div class="pd-title"><h1 id="pmTitle">${esc(p.name)}</h1>
+            <button type="button" class="heart-lg" data-like="${p.id}" aria-pressed="false">${icon('heart', 18)}<span class="t-off">Like</span><span class="t-on">Liked</span></button></div>
           <p class="short">${esc(p.short)}</p>
           <div class="price-box">
             ${p.price == null ? '<span class="por" style="font-size:20px">Price on request</span>' :
@@ -377,6 +379,7 @@
     });
     $('#pmBody').querySelectorAll('[data-enq]').forEach(b => b.onclick = () => enquire(b.dataset.enq, p));
     $('#pmBody').querySelectorAll('[data-nav]').forEach(a => a.addEventListener('click', () => { modalFromNav = false; }));
+    paintHearts();
     const vk = 'v' + p.id;
     if (!store.sget(vk)) { store.sset(vk, '1'); beacon('/api/track', { token: (visitor() || {}).token, product_id: p.id, type: 'view' }); }
   }
@@ -428,8 +431,129 @@
     if (parts[0] === 'c') viewCategory(parts[1], parts[2]);
     else if (parts[0] === 'search') viewSearch(parts.slice(1).join('/'));
     else if (parts[0] === 'about') viewAbout();
+    else if (parts[0] === 'profile') viewProfile();
     else viewHome();
     app.dataset.rendered = '1';
+    paintHearts();
+  }
+
+  // ---------- liked products & customer profile
+  const LIKES_KEY = 'llLikes';
+  const likes = new Set((store.get(LIKES_KEY) || []).map(Number));
+  function paintHearts() {
+    document.querySelectorAll('[data-like]').forEach(b => {
+      const on = likes.has(+b.dataset.like);
+      b.classList.toggle('liked', on);
+      b.setAttribute('aria-pressed', on);
+      if (b.classList.contains('heart')) b.setAttribute('aria-label', on ? 'Remove from liked products' : 'Add to liked products');
+    });
+    const c = $('#likeCount');
+    if (c) { c.textContent = likes.size; c.hidden = !likes.size; }
+    const v = visitor();
+    const av = $('#profileAvatar');
+    if (av) av.innerHTML = v && v.name ? `<b>${esc(v.name.trim()[0].toUpperCase())}</b>` : icon('user', 18);
+  }
+  async function refreshProfile() {
+    const v = visitor();
+    if (!v || !v.token) { paintHearts(); return null; }
+    try {
+      const r = await api('/api/profile', { token: v.token });
+      if (r.need_kyc) return null;
+      S.profile = r;
+      likes.clear();
+      r.likes.forEach(id => likes.add(id));
+      paintHearts();
+      return r;
+    } catch (e) { return null; }
+  }
+  async function syncLikes(token) {
+    const local = store.get(LIKES_KEY) || [];
+    if (local.length) {
+      try { await api('/api/likes/sync', { token, product_ids: local }); store.del(LIKES_KEY); } catch (e) { /* try again later */ }
+    }
+    return refreshProfile();
+  }
+  function toggleLike(id) {
+    const on = !likes.has(id);
+    if (on) likes.add(id); else likes.delete(id);
+    paintHearts();
+    document.querySelectorAll(`[data-like="${id}"]`).forEach(b => { b.classList.remove('pop'); void b.offsetWidth; if (on) b.classList.add('pop'); });
+    const v = visitor();
+    if (v && v.token) {
+      api('/api/like', { token: v.token, product_id: id, liked: on }).catch(() => {
+        if (on) likes.delete(id); else likes.add(id);
+        paintHearts();
+        toast('Could not save that, please try again.');
+      });
+      if (on) toast('Added to your liked products');
+    } else {
+      store.set(LIKES_KEY, [...likes]);
+      if (on) toast(store.sget('llLikeTip') ? 'Added to your liked products' : 'Saved on this phone. Share your number to keep it in your profile.');
+      store.sset('llLikeTip', '1');
+    }
+    if (location.hash === '#/profile' && !on) setTimeout(viewProfile, 250);
+  }
+  function logout() {
+    if (!confirm('Log out from this device?\n\nYour liked products and enquiries stay saved. Enter the same mobile number to see them again.')) return;
+    store.del(LS_KEY);
+    store.del(LIKES_KEY);
+    try { sessionStorage.clear(); } catch (e) { /* ignore */ }
+    location.hash = '#/';
+    location.reload();
+  }
+  const ENQ_STATUS = { new: ['Sent', 'sent'], contacted: ['We contacted you', 'contacted'], converted: ['Purchased', 'done'], closed: ['Completed', 'done'] };
+  const emptyLikes = () => `<div class="empty"><div class="e-ic">${icon('heart', 28)}</div><h3>No liked products yet</h3><p>Tap the ${icon('heart', 15)} on any product to save it here.</p><a class="btn-gold" href="#/" style="margin-top:12px">${icon('grid', 17)} Browse products</a></div>`;
+  async function viewProfile() {
+    setActiveChip('');
+    const v = visitor();
+    const likedList = () => S.products.filter(p => likes.has(p.id));
+    if (!v || !v.token) {
+      const liked = likedList();
+      app.innerHTML = `
+        <div class="crumbs"><a href="#/">Home</a>${icon('chevronRight', 14)}<span>My profile</span></div>
+        <section class="profile-head guest"><span class="profile-av">${icon('user', 30)}</span>
+          <div class="profile-id"><h1>Your profile</h1><p>Share your name and mobile number to save your liked products and see all your enquiries in one place, on any device.</p>
+          <button type="button" class="btn-gold" data-signin>${icon('user', 17)} Sign in with mobile number</button></div></section>
+        <div class="section-head"><div><h2>${icon('heart', 20)} Liked on this phone (${liked.length})</h2><p>Saved only on this device until you sign in</p></div></div>
+        ${liked.length ? grid(liked) : emptyLikes()}`;
+      paintHearts();
+      return;
+    }
+    if (!S.profile) app.innerHTML = '<div class="grid"><div class="skeleton"></div><div class="skeleton"></div></div>';
+    const r = (await refreshProfile()) || S.profile;
+    if (location.hash !== '#/profile') return;
+    const pv = (r && r.visitor) || v;
+    const liked = likedList();
+    const enq = (r && r.enquiries) || [];
+    const since = pv.since ? new Date(pv.since.replace(' ', 'T')).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : '';
+    app.innerHTML = `
+      <div class="crumbs"><a href="#/">Home</a>${icon('chevronRight', 14)}<span>My profile</span></div>
+      <section class="profile-head">
+        <span class="profile-av"><b>${esc((pv.name || '?').trim()[0].toUpperCase())}</b></span>
+        <div class="profile-id">
+          <h1>${esc(pv.name || '')}</h1>
+          <p>${icon('call', 15)} +91 ${esc(pv.mobile || '')}${pv.city ? ` <span class="dot-sep"></span> ${icon('pin', 15)} ${esc(pv.city)}` : ''}${since ? ` <span class="dot-sep"></span> Customer since ${esc(since)}` : ''}</p>
+          <div class="profile-stats"><span><b>${liked.length}</b> liked</span><span><b>${enq.length}</b> enquir${enq.length === 1 ? 'y' : 'ies'}</span></div>
+        </div>
+        <button type="button" class="btn-logout" data-logout>${icon('logout', 17)} Log out</button>
+      </section>
+      <div class="section-head"><div><h2>${icon('heart', 20)} Liked products (${liked.length})</h2><p>Tap the heart again to remove a product</p></div></div>
+      ${liked.length ? grid(liked) : emptyLikes()}
+      <div class="section-head"><div><h2>${icon('message', 20)} My enquiries (${enq.length})</h2><p>Products you asked us about on WhatsApp, email or phone</p></div></div>
+      ${enq.length ? `<div class="enq-list">${enq.map(q => {
+        const pr = S.byId[q.product_id];
+        const st = ENQ_STATUS[q.status] || ENQ_STATUS.new;
+        const when = new Date(q.ts.replace(' ', 'T')).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const via = q.channel === 'whatsapp' ? icon('whatsapp', 14) + ' WhatsApp' : q.channel === 'email' ? icon('mail', 14) + ' Email' : icon('call', 14) + ' Call';
+        return `<div class="enq-row">
+          <span class="enq-thumb">${pr ? media(pr) : `<span class="enq-gen">${icon('message', 22)}</span>`}</span>
+          <div class="enq-main">
+            ${pr ? `<a href="#/p/${pr.id}">${esc(pr.name)}</a>` : `<strong>${esc(q.product || 'General enquiry')}</strong>`}
+            <small><span class="via ${esc(q.channel)}">${via}</span> ${esc(when)}</small>
+          </div>
+          <span class="enq-status ${st[1]}">${st[0]}</span></div>`;
+      }).join('')}</div>` : `<div class="empty"><div class="e-ic">${icon('message', 28)}</div><h3>No enquiries yet</h3><p>Open any product and tap <b>Enquire on WhatsApp</b> or <b>Email</b>. It will show up here.</p></div>`}`;
+    paintHearts();
   }
 
   // ---------- KYC
@@ -468,6 +592,7 @@
       Genie.ask(async (name, mobile) => {
         const r = await api('/api/visit', { name, mobile, consent: true, quick: true, anon_visit: store.sget('llAnonVisit') });
         store.set(LS_KEY, r);
+        syncLikes(r.token);
         return r;
       });
     }, ASK_DELAY);
@@ -477,6 +602,7 @@
   async function startVisit() {
     const v = visitor();
     if (!v || !v.token) return store.sget('llSkip') ? startAnonymous() : showKyc();
+    refreshProfile();
     if (store.sget('llVisit')) { if (window.Genie) Genie.showHelpButton(v); return; }
     try {
       const r = await api('/api/visit', { token: v.token });
@@ -502,6 +628,7 @@
       const r = await api('/api/visit', Object.assign(body, { anon_visit: store.sget('llAnonVisit') }));
       store.set(LS_KEY, r);
       store.sset('llVisit', '1');
+      await syncLikes(r.token);
       $('#kycModal').hidden = true;
       document.body.style.overflow = $('#productModal').hidden ? '' : 'hidden';
       if (!location.hash.startsWith('#/p/')) renderBase(lastBase);
@@ -544,6 +671,10 @@
   }
 
   document.addEventListener('click', e => {
+    const lk = e.target.closest('[data-like]');
+    if (lk) { e.preventDefault(); e.stopPropagation(); toggleLike(+lk.dataset.like); return; }
+    if (e.target.closest('[data-signin]')) { e.preventDefault(); showKyc(); return; }
+    if (e.target.closest('[data-logout]')) { e.preventDefault(); logout(); return; }
     const g = e.target.closest('[data-general]');
     if (g) { e.preventDefault(); enquire(g.dataset.general, null); }
     if (e.target.closest('#productModal [data-close]')) {

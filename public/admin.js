@@ -152,6 +152,8 @@
           ${hbars(d.top_viewed, r => `${esc(r.name)} <small>· ${esc(r.category || '')}</small>`, false, 'views')}</div>
         <div class="panel"><h2>${icon('message', 18)} Most enquired products</h2><p class="sub">Products customers contacted you about, ${label}</p>
           ${hbars(d.top_enquired, r => `${esc(r.name)} <small>· ${fmt(r.wa)} WA, ${fmt(r.em)} email</small>`, true, 'enquiries')}</div>
+        <div class="panel"><h2>${icon('heart', 18)} Most liked products</h2><p class="sub">Products customers heart-marked, ${label} (${fmt(k.likes)} likes)</p>
+          ${hbars(d.top_liked || [], r => `${esc(r.name)} <small>· ${esc(r.category || '')}</small>`, false, 'likes')}</div>
         <div class="panel"><h2>${icon('pin', 18)} Top cities</h2><p class="sub">Unique visitors by city, ${label}</p>
           ${hbars(d.cities, r => esc(r.city || 'Unknown'), false, 'visitors')}</div>
         <div class="panel"><h2>${icon('layers', 18)} Views by category</h2><p class="sub">Which departments customers browse, ${label}</p>
@@ -211,9 +213,9 @@
         <span class="grow"></span>
         <a class="btn" href="/api/admin/visitors.csv">${icon('download', 16)} Export CSV</a>
       </div>
-      ${d.visitors.length ? `<div class="table-wrap"><table class="t"><thead><tr><th>Name</th><th>Mobile</th><th>City</th><th>First visit</th><th>Last visit</th><th class="num">Visits</th><th class="num">Views</th><th class="num">Enquiries</th><th></th></tr></thead><tbody>
+      ${d.visitors.length ? `<div class="table-wrap"><table class="t"><thead><tr><th>Name</th><th>Mobile</th><th>City</th><th>First visit</th><th>Last visit</th><th class="num">Visits</th><th class="num">Views</th><th class="num">Likes</th><th class="num">Enquiries</th><th></th></tr></thead><tbody>
       ${d.visitors.map(v => `<tr><td class="strong">${esc(v.name)}</td><td class="nowrap"><a href="tel:+91${esc(v.mobile)}">+91 ${esc(v.mobile)}</a></td><td>${esc(v.city)}</td>
-        <td class="nowrap">${dt(v.first_seen)}</td><td class="nowrap">${dt(v.last_seen)}</td><td class="num">${fmt(v.visits)}</td><td class="num">${fmt(v.views)}</td><td class="num">${fmt(v.enquiries)}</td>
+        <td class="nowrap">${dt(v.first_seen)}</td><td class="nowrap">${dt(v.last_seen)}</td><td class="num">${fmt(v.visits)}</td><td class="num">${fmt(v.views)}</td><td class="num">${fmt(v.likes)}</td><td class="num">${fmt(v.enquiries)}</td>
         <td class="actions"><a class="btn sm wa" target="_blank" rel="noopener" href="${waLink(v.mobile, `Hello ${v.name}, greetings from Leela Laher Tech Point! `)}">${icon('whatsapp', 14)} Message</a></td></tr>`).join('')}
       </tbody></table></div>` : '<div class="table-wrap"><div class="empty-s">No customers yet. Customers appear here when they enter their details on the catalogue.</div></div>'}`;
     $('#cq').oninput = debounce(e => customers(e.target.value.trim()).then(() => { const i = $('#cq'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }), 350);
